@@ -13,8 +13,15 @@ public class TXBulkService {
     @Inject
     LiveCodingConfig config;
 
+    @Inject
+    TXService txService;
+
     public void processTXCommandBatch(List<TXCommand> commands) {
         Log.infof("Processing %d commands with parallelism of %d", commands.size(), config.parallelism());
+        //a naive implementation
+        commands.forEach(txService::processCommand);
+
+
         //TODO split the commands into sub-lists
 
         //TODO call processTXCommandBatchAsync for each sub-command

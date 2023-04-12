@@ -1,74 +1,92 @@
 # live-coding-1
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Simple [Quarkus](Quarkus.md)/Maven based Java 17 project for the live coding sessions.
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+## Initial steps
 
-## Running the application in dev mode
+### IDE
 
-You can run your application in dev mode that enables live coding using:
+Install Java 17 - from [Adoptium](https://adoptium.net/).
 
-```shell script
-./mvnw compile quarkus:dev
-```
+Get Intellij Idea (community of Enterprise) - from [the Intellj site](https://www.jetbrains.com/idea/download/#section=windows).
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
+Enable/install the following plugins:
 
-## Packaging and running the application
+1. Maven
+2. Git
+3. Quarkus
 
-The application can be packaged using:
+### Sources
 
-```shell script
-./mvnw package
-```
+Sources are located in the https://github.com/jan-peremsky/live-coding-1.git. Clone it and import into the IDE.
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+- Build the project
+- Run unit tests from the IDE
+- Run the project using the `com.wag.LiveCodingRunner` class or using maven command `mvn compile quarkus:dev`
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+## Coding sessions
 
-If you want to build an _über-jar_, execute the following command:
+There are 2 main coding sessions. They both build upon the skeleton project downloaded and initialised in the previous steps.
 
-```shell script
-./mvnw package -Dquarkus.package.type=uber-jar
-```
+Each session consists of the main task and some bonus sub-tasks. There are always multiple solutions each bringing in some pros and cons.
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+You'll try to come up witch your own solution which you'll discuss with us and implement yourself.
+Live coding session is not just about coding and Java skills - it's also about ideas, communication, design, patterns, proof ...
 
-## Creating a native executable
+### Background
 
-You can create a native executable using:
+Let's pretend we have a REST API based microservice which processes transaction commands - `TXCommand`s.
+Each `TXCommand` has a unique ID, its type and also the amount (we are using `Double` type to make it simpler).
+Based on the properties of a particular `TXCommand` instance, our service:
 
-```shell script
-./mvnw package -Pnative
-```
+1. stores it into DB (simulated)
+2. finds a corresponding `Account` in the DB
+3. applies the command to the account - it changes the amount stored on that account
+4. stores the changes account
+5. nothing more, nothing less - in the nutshell
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+... but things get more complicated ...
 
-```shell script
-./mvnw package -Pnative -Dquarkus.native.container-build=true
-```
+## Session #1 - processing several types of `TXCommand`s one by one
 
-You can then execute your native executable with: `./target/live-coding-1-1.0-SNAPSHOT-runner`
+In reality, we have many types of of `TXCommand` or subtypes if you will.
+Some examples might be:
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
+- Deposit command - represents the positive money transfer - you are adding to the corresponding account
+- Withdrawal command - you are spending money and thus lowering the amount on the corresponding account
+- Tax refund command - it's like the deposit command, but money is stored on a different (dedicated) account
 
-## Related Guides
+To sum up:
 
-- YAML Configuration ([guide](https://quarkus.io/guides/config#yaml)): Use YAML to configure your Quarkus application
+- each command type influences possibly a different account of the corresponding client
+- each command type influences the related account possibly in a different way (+/-/*/%)
+- each command type might (ad will) contain additional than the basic attributes.
 
-## Provided Code
+### Tasks
 
-### YAML Config
+1. propose data structures to allow for a growing set of `TXCommand` types each possibly with some extra attributes
+2. propose the way of processing of various `TXCommand`s. Remember - the variety of types and their impact on accounts will only grow in the future.
 
-Configure your application with YAML
+## Session #2 - let's parallelize `TXCommand` batch processing
 
-[Related guide section...](https://quarkus.io/guides/config-reference#configuration-examples)
+We are able to process `TXCommand`s one by one as they come via particular HTTP requests. This has some drawbacks:
 
-The Quarkus application configuration is located in `src/main/resources/application.yml`.
+- we have to ensure the subsequent requests for one particular client (by `clientId`) are processed in order. And as our REST APi is capable of processing multiple concurrent requests at once, we cannot ensure this requirement.
+- so we need to firs enqueue the requests and then process them one by one, which is slow - different client requests should be processed in parallel
 
-### RESTEasy JAX-RS
+So let's implement a parallel batch processing...
 
-Easily start your RESTful Web Services
+It should work like this:
 
-[Related guide section...](https://quarkus.io/guides/getting-started#the-jax-rs-resources)
+1. the level of parallelism is configured via the `LiveCodingConfig#parallelism` property - lets call it `P`
+2. we will receive a list of `TXCommand`s (1-50 ordered items) via the REST API
+3. we want to split this list into the `P` sub-lists based on the `clientId` property
+4. in the sub-lists we need to ensure the correct order
+5. we will submit these sub-lists for the execution (not implemented - just a stub for now)
+
+### Tasks
+
+1. implement the splitting part
+2. write a unit test to be sure the implementation is correct
+
+

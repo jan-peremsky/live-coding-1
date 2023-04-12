@@ -8,8 +8,6 @@ import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.util.List;
-
 @ApplicationScoped
 public class TXService {
     @Inject
@@ -18,6 +16,12 @@ public class TXService {
     @Inject
     LiveCodingConfig config;
 
+    /**
+     * Main service method to process one {@link TXCommand}.
+     * For each command there is an associated account we want to change according to the commands type and it's amount and/or additional attributes.
+     *
+     * @param command
+     */
     public void processCommand(TXCommand command) {
         Log.infof("Processing command: %s", command);
         //store the command
@@ -34,18 +38,29 @@ public class TXService {
         repository.storeAccount(account);
     }
 
+    /**
+     * We have a command and the corresponding account. So let's apply the command to the account. I.e. add or subtract the amount in most cases.
+     *
+     * @param command
+     * @param account
+     * @return
+     */
     private Account applyTXCommand(TXCommand command, Account account) {
         //TODO for every command type, there might be a different effect on the account.amount
         account.setAmount(account.getAmount() + command.getAmount());
         return account;
     }
 
+    /**
+     * For the given {@link TXCommand#getType()} returns the associated {@link Account} type. For the given TXCommand we'll find the corresponding
+     * Account instance and apply the command to the account.
+     *
+     * @param command
+     * @return
+     */
     private String getAccountTypeFromTXCommand(TXCommand command) {
         //TODO to be implemented
         return "account.type";
     }
 
-    public void processCommands(List<TXCommand> commands) {
-        //TODO implement parallel processing with the degree of parallelism specified by the config.parallelization()
-    }
 }

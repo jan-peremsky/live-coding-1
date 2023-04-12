@@ -1,6 +1,7 @@
 package com.wag.resource;
 
 import com.wag.model.TXCommand;
+import com.wag.service.TXBulkService;
 import com.wag.service.TXService;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
@@ -18,6 +19,9 @@ import java.util.List;
 public class TxResource {
     @Inject
     TXService service;
+
+    @Inject
+    TXBulkService bulkService;
 
     @GET
     @Path("hello")
@@ -45,7 +49,7 @@ public class TxResource {
     public Response submitCommandBatch(List<TXCommand> commands) {
         try {
             Log.infof("Received %d commands", commands.size());
-            service.processCommands(commands);
+            bulkService.processTXCommandBatch(commands);
             return Response.ok().build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage()).build();
